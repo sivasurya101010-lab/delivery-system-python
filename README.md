@@ -35,3 +35,10 @@ The test suite can be launched with the following command:
 bash
 python -m unittest -v
 However, the test cases provided can also be directly inputted to generate_report() .
+
+Bonus: ASCII Routes
+
+The program also prints the delivery route of each agent in the terminal after generating the report.
+
+Example:
+A1: A1 -> W1 -> [10, 20] -> W2 -> [15, 25]
