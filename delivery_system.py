@@ -124,6 +124,18 @@ def simulate_deliveries(data, assignments):
     return report
 
 
+def print_routes(data, assignments):
+    print("\nDelivery Routes")
+
+    for agent_id in assignments:
+        route = [agent_id]
+
+        for package in assignments[agent_id]:
+            route.append(package["warehouse"])
+            route.append(str(package["destination"]))
+
+        print(f"{agent_id}: " + " -> ".join(route))
+
 def generate_report(file_path):
     data = load_data(file_path)
     data = normalize_data(data)
@@ -142,7 +154,12 @@ if __name__ == "__main__":
     input_file = Path("base_case.json")
     output_file = Path("report.json")
 
-    report = generate_report(input_file)
+    data= normalize_data(load_data(input_file))
+    assignments = assign_packages(data)
+
+    report = simulate_deliveries(data, assignments)
     save_report(report, output_file)
 
     print(f"Report saved to {output_file}")
+
+    print_routes(data,assignments)
