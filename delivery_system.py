@@ -14,6 +14,7 @@ def normalize_entities(entities):
 
     result = {}
 
+    # Convert list format into dictionary format
     for entity in entities:
         result[entity["id"]]= entity["location"]
 
@@ -36,6 +37,7 @@ def normalize_data(data):
 
 
 def calculate_distance(point_a, point_b):
+    # Calculate the Euclidean distance between two points
     return math.sqrt(( point_a[0]-point_b[0])**2 + (point_a[1]-point_b[1])**2 )
 
 
@@ -45,6 +47,7 @@ def assign_packages(data):
     for agent_id in data["agents"]:
         assignments[agent_id]=[]
 
+    # Assign each package to the nearest agent
     for package in data["packages"]:
         warehouse_location= data["warehouses"][package["warehouse"]]
 
@@ -77,8 +80,10 @@ def simulate_deliveries(data, assignments):
             warehouse_location = data["warehouses"][package["warehouse"]]
             destination = package["destination"]
 
+            # Agent travels from current location to warehouse
             total_distance += calculate_distance(current_location,warehouse_location)
 
+            # Agent travels from warehouse to destination
             total_distance += calculate_distance(warehouse_location,destination)
 
             current_location = destination
@@ -97,6 +102,8 @@ def simulate_deliveries(data, assignments):
             "efficiency": round(efficiency, 2) if efficiency is not None else None
         }
 
+
+    # Find the agent with the lowest average distance per package
     active_agents = []
 
     for agent_id in report:
