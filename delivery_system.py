@@ -25,34 +25,28 @@ def normalize_data(data):
 
     for package in data["packages"]:
         package_data = package.copy()
-        package_data["warehouse"] = package.get(
-            "warehouse",
-            package.get("warehouse_id")
-        )
+        package_data["warehouse"] = package.get("warehouse",package.get("warehouse_id"))
         packages.append(package_data)
 
     return {
         "warehouses": normalize_entities(data["warehouses"]),
         "agents": normalize_entities(data["agents"]),
-        "packages": packages,
+        "packages":packages,
     }
 
 
 def calculate_distance(point_a, point_b):
-    return math.sqrt(
-        (point_a[0] - point_b[0]) ** 2
-        + (point_a[1] - point_b[1]) ** 2
-    )
+    return math.sqrt(( point_a[0]-point_b[0])**2 + (point_a[1]-point_b[1])**2 )
 
 
 def assign_packages(data):
     assignments = {}
 
     for agent_id in data["agents"]:
-        assignments[agent_id] = []
+        assignments[agent_id]=[]
 
     for package in data["packages"]:
-        warehouse_location = data["warehouses"][package["warehouse"]]
+        warehouse_location= data["warehouses"][package["warehouse"]]
 
         nearest_agent = None
         shortest_distance = float("inf")
@@ -60,10 +54,7 @@ def assign_packages(data):
         for agent_id in data["agents"]:
             agent_location = data["agents"][agent_id]
 
-            distance = calculate_distance(
-                agent_location,
-                warehouse_location
-            )
+            distance = calculate_distance(agent_location,warehouse_location)
 
             if distance < shortest_distance:
                 shortest_distance = distance
@@ -86,15 +77,9 @@ def simulate_deliveries(data, assignments):
             warehouse_location = data["warehouses"][package["warehouse"]]
             destination = package["destination"]
 
-            total_distance += calculate_distance(
-                current_location,
-                warehouse_location
-            )
+            total_distance += calculate_distance(current_location,warehouse_location)
 
-            total_distance += calculate_distance(
-                warehouse_location,
-                destination
-            )
+            total_distance += calculate_distance(warehouse_location,destination)
 
             current_location = destination
 
@@ -102,6 +87,7 @@ def simulate_deliveries(data, assignments):
 
         if packages_delivered:
             efficiency = total_distance / packages_delivered
+
         else:
             efficiency = None
 
