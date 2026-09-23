@@ -12,20 +12,29 @@ def normalize_entities(entities):
     if isinstance(entities, dict):
         return entities
 
-    return {entity["id"]: entity["location"] for entity in entities}
+    result = {}
+
+    for entity in entities:
+        result[entity["id"]]= entity["location"]
+
+    return result
 
 
 def normalize_data(data):
+    packages = []
+
+    for package in data["packages"]:
+        package_data = package.copy()
+        package_data["warehouse"] = package.get(
+            "warehouse",
+            package.get("warehouse_id")
+        )
+        packages.append(package_data)
+
     return {
         "warehouses": normalize_entities(data["warehouses"]),
         "agents": normalize_entities(data["agents"]),
-        "packages": [
-            {
-                **package,
-                "warehouse": package.get("warehouse", package.get("warehouse_id")),
-            }
-            for package in data["packages"]
-        ],
+        "packages": packages,
     }
 
 
@@ -37,18 +46,28 @@ def calculate_distance(point_a, point_b):
 
 
 def assign_packages(data):
-    assignments = {agent_id: [] for agent_id in data["agents"]}
+    assignments = {}
+
+    for agent_id in data["agents"]:
+        assignments[agent_id] = []
 
     for package in data["packages"]:
         warehouse_location = data["warehouses"][package["warehouse"]]
 
-        nearest_agent = min(
-            data["agents"],
-            key=lambda agent_id: (
-                calculate_distance(data["agents"][agent_id], warehouse_location),
-                agent_id,
-            ),
-        )
+        nearest_agent = None
+        shortest_distance = float("inf")
+
+        for agent_id in data["agents"]:
+            agent_location = data["agents"][agent_id]
+
+            distance = calculate_distance(
+                agent_location,
+                warehouse_location
+            )
+
+            if distance < shortest_distance:
+                shortest_distance = distance
+                nearest_agent = agent_id
 
         assignments[nearest_agent].append(package)
 
@@ -58,7 +77,8 @@ def assign_packages(data):
 def simulate_deliveries(data, assignments):
     report = {}
 
-    for agent_id, packages in assignments.items():
+    for agent_id in assignments:
+        packages = assignments[agent_id]
         current_location = data["agents"][agent_id]
         total_distance = 0.0
 
@@ -68,49 +88,59 @@ def simulate_deliveries(data, assignments):
 
             total_distance += calculate_distance(
                 current_location,
-                warehouse_location,
+                warehouse_location
             )
+
             total_distance += calculate_distance(
                 warehouse_location,
-                destination,
+                destination
             )
 
             current_location = destination
 
         packages_delivered = len(packages)
 
+        if packages_delivered:
+            efficiency = total_distance / packages_delivered
+        else:
+            efficiency = None
+
         report[agent_id] = {
             "packages_delivered": packages_delivered,
             "total_distance": round(total_distance, 2),
-            "efficiency": round(total_distance / packages_delivered, 2)
-            if packages_delivered
-            else None,
+            "efficiency": round(efficiency, 2) if efficiency is not None else None
         }
 
-    active_agents = [
-        agent_id
-        for agent_id, details in report.items()
-        if details["packages_delivered"] > 0
-    ]
+    active_agents = []
 
-    best_agent = min(
-        active_agents,
-        key=lambda agent_id: (report[agent_id]["efficiency"], agent_id),
-    ) if active_agents else None
+    for agent_id in report:
+        if report[agent_id]["packages_delivered"] > 0:
+            active_agents.append(agent_id)
 
-    report["best_agent"] = best_agent
+    if active_agents:
+        best_agent =active_agents[0]
+
+        for agent_id in active_agents:
+            if report[agent_id]["efficiency"] < report[best_agent]["efficiency"]:
+                best_agent= agent_id
+    else:
+        best_agent=None
+
+    report["best_agent"]= best_agent
+
     return report
 
 
 def generate_report(file_path):
-    """Load input, assign packages, simulate deliveries, and build the report."""
-    data = normalize_data(load_data(file_path))
+    data = load_data(file_path)
+    data = normalize_data(data)
+
     assignments = assign_packages(data)
+
     return simulate_deliveries(data, assignments)
 
 
 def save_report(report, file_path="report.json"):
-    """Save the final report as formatted JSON."""
     with open(file_path, "w", encoding="utf-8") as file:
         json.dump(report, file, indent=4)
 
@@ -121,4 +151,5 @@ if __name__ == "__main__":
 
     report = generate_report(input_file)
     save_report(report, output_file)
+
     print(f"Report saved to {output_file}")
